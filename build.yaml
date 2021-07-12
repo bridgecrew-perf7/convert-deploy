@@ -77,7 +77,7 @@ profiles:
   - name: convert-deploy
     description: builds the converter utility package library
     type: lib/convert-deploy
-    target: convert-deploy
+    target: .
 
 functions:
   - name: receive-notification
