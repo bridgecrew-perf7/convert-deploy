@@ -1,0 +1,277 @@
+---
+
+input:
+  var:
+    - name: AWS_URL
+      required: true
+      type: uri
+      description: URL of S3 type of storage
+
+    - name: AWS_DEST_BUCKET
+      required: true
+      type: string
+      description: Destination bucket where to store final converted image
+
+    - name: TARGET_NAMESPACE
+      required: true
+      type: string
+      description: Kubernetes namespace where pipeline will run
+
+    - name: APPLICATION_NAME
+      required: true
+      type: string
+      description: Application name which tekton pipeline will create
+
+    - name: ART_RUNNER_URL
+      required: true
+      type: string
+      description: Artisan runner URL
+
+    - name: PACKAGE_NAME
+      required: true
+      type: string
+      description: Package URL which contains actual convert flow
+
+    - name: AWS_PROVIDER
+      required: true
+      type: string
+      description: S3 storage provider name minio|aws|gcr
+
+    - name: AWS_USE_SSL
+      required: true
+      type: string
+      description: Connectivity to S3 object storage requires TLS or not value - true|false
+
+    - name: WEBHOOK_RECEIVER
+      required: true
+      type: string
+      description: Artisan runner webhook receiver specific pointing to deployment activity
+
+    - name: OUTPUT_FORMAT
+      required: true
+      type: string
+      description: Output convertion format, qcow2|vhdx|raw
+
+  secret:
+    - name: AWS_ACCESS_KEY_ID
+      description: S3 object storage access key
+
+    - name: AWS_SECRET_ACCESS_KEY
+      description: S3 object storage secret key
+
+    - name: ART_RUNNER_UNAME
+      description: Artisan runner username
+
+    - name: ART_RUNNER_PWD
+      description: Artisan runner password
+  key:
+    - name: VERIFICATION_KEY
+      description: the public PGP key
+      path: /
+
+    - name: SIGNING_KEY
+      description: the private PGP key
+      path: /
+
+profiles:
+  - name: convert-deploy
+    description: builds the converter utility package library
+    type: lib/convert-deploy
+    target: convert-deploy
+
+functions:
+  - name: receive-notification
+    description: receives notification from S3 storage and pases it
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    export: true
+    run:
+      - vmdiskfs parse
+      - sleep 10
+    input:
+      secret:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - ART_RUNNER_UNAME
+        - ART_RUNNER_PWD
+      var:
+        - AWS_URL
+        - AWS_DEST_BUCKET
+        - TARGET_NAMESPACE
+        - APPLICATION_NAME
+        - ART_RUNNER_URL
+        - PACKAGE_NAME
+        - AWS_PROVIDER
+        - AWS_USE_SSL
+        - WEBHOOK_RECEIVER
+        - OUTPUT_FORMAT
+      key:
+        - VERIFICATION_KEY
+        - SIGNING_KEY
+
+  - name: download-configuration
+    description: download specific vm configuration
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    export: true
+    run:
+      - vmdiskfs download-config
+      - sleep 10
+    input:
+      secret:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - ART_RUNNER_UNAME
+        - ART_RUNNER_PWD
+      var:
+        - AWS_URL
+        - AWS_DEST_BUCKET
+        - TARGET_NAMESPACE
+        - APPLICATION_NAME
+        - ART_RUNNER_URL
+        - PACKAGE_NAME
+        - AWS_PROVIDER
+        - AWS_USE_SSL
+        - WEBHOOK_RECEIVER
+        - OUTPUT_FORMAT
+      key:
+        - VERIFICATION_KEY
+        - SIGNING_KEY
+
+  - name: download-images
+    description: download images based on configuration provided
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    export: true
+    run:
+      - vmdiskfs download-with-config
+      - sleep 10
+    input:
+      secret:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - ART_RUNNER_UNAME
+        - ART_RUNNER_PWD
+      var:
+        - AWS_URL
+        - AWS_DEST_BUCKET
+        - TARGET_NAMESPACE
+        - APPLICATION_NAME
+        - ART_RUNNER_URL
+        - PACKAGE_NAME
+        - AWS_PROVIDER
+        - AWS_USE_SSL
+        - WEBHOOK_RECEIVER
+        - OUTPUT_FORMAT
+      key:
+        - VERIFICATION_KEY
+        - SIGNING_KEY
+
+  - name: convert-images
+    description: converting images based on configuration provided
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    export: true
+    run:
+      - vmdiskfs convert-with-config
+      - sleep 10
+    input:
+      secret:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - ART_RUNNER_UNAME
+        - ART_RUNNER_PWD
+      var:
+        - AWS_URL
+        - AWS_DEST_BUCKET
+        - TARGET_NAMESPACE
+        - APPLICATION_NAME
+        - ART_RUNNER_URL
+        - PACKAGE_NAME
+        - AWS_PROVIDER
+        - AWS_USE_SSL
+        - WEBHOOK_RECEIVER
+        - OUTPUT_FORMAT
+      key:
+        - VERIFICATION_KEY
+        - SIGNING_KEY
+
+  - name: upload-images
+    description: uploads converted images based on configuration provided
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    export: true
+    run:
+      - vmdiskfs upload-with-config
+      - sleep 10
+    input:
+      secret:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - ART_RUNNER_UNAME
+        - ART_RUNNER_PWD
+      var:
+        - AWS_URL
+        - AWS_DEST_BUCKET
+        - TARGET_NAMESPACE
+        - APPLICATION_NAME
+        - ART_RUNNER_URL
+        - PACKAGE_NAME
+        - AWS_PROVIDER
+        - AWS_USE_SSL
+        - WEBHOOK_RECEIVER
+        - OUTPUT_FORMAT
+      key:
+        - VERIFICATION_KEY
+        - SIGNING_KEY
+
+  - name: send-webhook
+    description: send json format configuration to artisan runner vm deployment webhook
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    export: true
+    run:
+      - vmdiskfs send-webhook
+      - sleep 10
+    input:
+      secret:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - ART_RUNNER_UNAME
+        - ART_RUNNER_PWD
+      var:
+        - AWS_URL
+        - AWS_DEST_BUCKET
+        - TARGET_NAMESPACE
+        - APPLICATION_NAME
+        - ART_RUNNER_URL
+        - PACKAGE_NAME
+        - AWS_PROVIDER
+        - AWS_USE_SSL
+        - WEBHOOK_RECEIVER
+        - OUTPUT_FORMAT
+      key:
+        - VERIFICATION_KEY
+        - SIGNING_KEY
+
+  - name: convert-flow
+    description: Artisan runner flow
+    runtime: quay.io/rhlcloud/fedora-min
+    export: true
+    run:
+      - art merge scripts/prepare_flow_convert_bare.yaml.tem
+      - art flow run -l namespace=${TARGET_NAMESPACE} -u=${ART_RUNNER_UNAME}:${ART_RUNNER_PWD} scripts/prepare_flow_convert_bare.yaml -b . ${ART_RUNNER_URL}
+    input:
+      secret:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+        - ART_RUNNER_UNAME
+        - ART_RUNNER_PWD
+      var:
+        - AWS_URL
+        - AWS_DEST_BUCKET
+        - TARGET_NAMESPACE
+        - APPLICATION_NAME
+        - ART_RUNNER_URL
+        - PACKAGE_NAME
+        - AWS_PROVIDER
+        - AWS_USE_SSL
+        - WEBHOOK_RECEIVER
+        - OUTPUT_FORMAT
+      key:
+        - VERIFICATION_KEY
+        - SIGNING_KEY

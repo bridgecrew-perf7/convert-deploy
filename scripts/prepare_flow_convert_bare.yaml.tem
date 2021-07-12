@@ -1,0 +1,48 @@
+---
+name: ${APPLICATION_NAME}
+description: creates tekton pipeline for specified application
+
+steps:
+  - name: receive-notification
+    description: receives notification from S3 storage and pases it
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    package: ${PACKAGE_NAME}
+    source: create
+    function: receive-notification
+
+  - name: download-configuration
+    description: download specific vm configuration
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    package: ${PACKAGE_NAME}
+    source: read
+    function: download-configuration
+
+  - name: download-images
+    description: download images based on configuration provided
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    package: ${PACKAGE_NAME}
+    source: read
+    function: download-images
+
+  - name: convert-images
+    description: converting images based on configuration provided
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    package: ${PACKAGE_NAME}
+    source: read
+    function: convert-images
+
+  - name: upload-images
+    description: uploads converted images based on configuration provided
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    package: ${PACKAGE_NAME}
+    source: read
+    function: upload-images
+
+  - name: send-webhook
+    description: send json format configuration to artisan runner vm deployment webhook
+    runtime: quay.io/rhlcloud/vmdiskfsdev
+    package: ${PACKAGE_NAME}
+    source: read
+    function: send-webhook
+
+...
